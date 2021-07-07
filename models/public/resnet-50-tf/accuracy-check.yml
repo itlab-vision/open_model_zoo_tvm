@@ -34,3 +34,33 @@ models:
             aspect_ratio_scale: greater
           - type: crop
             size: 224
+
+  - name: resnet-50-tvm
+    launchers:
+      - framework: tvm
+        model: public/resnet-50-tf/resnet_v1-50.dylib
+        adapter: classification
+        inputs:
+          - name: data
+            type: INPUT
+            shape: 1,3,224,224
+            layout: NCHW
+        _input_precision:
+          - data:FP32
+        batch: 1
+        dev_id: 0
+
+    datasets:
+      - name: imagenet_1001_classes
+        reader: pillow_imread
+        preprocessing:
+          - type: resize
+            size: 256
+            aspect_ratio_scale: greater
+          - type: crop
+            size: 224
+          - type: normalization
+            std: 255
+          - type: normalization
+            mean: (0.485, 0.456, 0.406)
+            std: (0.229, 0.224, 0.225)
