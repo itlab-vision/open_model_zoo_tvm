@@ -41,26 +41,23 @@ models:
         model: public/resnet-50-tf/resnet_v1-50.dylib
         adapter: classification
         inputs:
-          - name: data
+          - name: map/TensorArrayStack/TensorArrayGatherV3
             type: INPUT
-            shape: 1,3,224,224
-            layout: NCHW
+            shape: 1,224,224,3
+            layout: NHWC
         _input_precision:
-          - data:FP32
+          - map/TensorArrayStack/TensorArrayGatherV3:FP32
         batch: 1
         dev_id: 0
 
     datasets:
       - name: imagenet_1001_classes
-        reader: pillow_imread
         preprocessing:
+          - type: bgr_to_rgb
+          - type: normalization
+            mean: [123.68, 116.78, 103.94]
           - type: resize
             size: 256
             aspect_ratio_scale: greater
           - type: crop
             size: 224
-          - type: normalization
-            std: 255
-          - type: normalization
-            mean: (0.485, 0.456, 0.406)
-            std: (0.229, 0.224, 0.225)
