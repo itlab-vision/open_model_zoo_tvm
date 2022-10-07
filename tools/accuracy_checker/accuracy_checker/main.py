@@ -83,6 +83,25 @@ def add_common_args(parser):
         required=False,
         nargs='+'
     )
+    common_args.add_argument(
+        '--session',
+        help='LocalSession or RemoteSession to use.  '
+             'Choices: [local, remote]. ',
+        required=False,
+    )
+    common_args.add_argument(
+        '--device',
+        help='Choice of CPU/GPU hardware to run '
+             'Choices: [cpu, gpu]. ',
+        required=False,
+    )
+    common_args.add_argument(
+        '--vm',
+        help='GraphExecutor or VirtualMachine to use. '
+             'Choices: [false, true]. ',
+        type=cast_to_bool,
+        required=False,
+    )
 
 
 def add_config_filtration_args(parser):

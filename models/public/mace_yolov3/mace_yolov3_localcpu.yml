@@ -1,20 +1,20 @@
 models:
-  - name: yolo-v3-tf
+  - name: mace_yolov3
     launchers:
       - framework: tvm
-        model: /Users/admin/workspace/open_model_zoo/models/tvm_compiled/yolo-v3-tf/exec_yolo-v3-tf.so
+        model: /Users/admin/workspace/open_model_zoo/models/tvm_compiled/mace_yolo-v3-tf/exec_mace_yolo-v3-tf.so
         device: cpu
         session: local
         vm: true
         inputs:
-          - name: 'input_1'
+          - name: input_1
             type: INPUT
             shape: 1,416,416,3
             layout: NHWC
         outputs:
-            - conv2d_58/BiasAdd
-            - conv2d_66/BiasAdd
-            - conv2d_74/BiasAdd
+            - 0
+            - 1
+            - 2
         adapter:
           type: yolo_v3
           anchors: "10,13,  16,30,  33,23,  30,61,  62,45,  59,119,  116,90,  156,198,  373,326"
@@ -24,9 +24,9 @@ models:
           anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
           raw_output: True
           outputs:
-            - conv2d_58/BiasAdd
-            - conv2d_66/BiasAdd
-            - conv2d_74/BiasAdd
+            - 0
+            - 1
+            - 2
 
     datasets:
       - name: ms_coco_detection_80_class_without_background
@@ -38,6 +38,8 @@ models:
           - type: resize
             size: 416
           
+          
+
         postprocessing:
           - type: resize_prediction_boxes
           - type: filter

@@ -1,10 +1,20 @@
 models:
-  - name: mobilenet-v1-1.0-224-cf
+  - name: mobilenet-v1-1.0-224
     launchers:
-      - framework: caffe
-        model:   mobilenet-v1-1.0-224.prototxt
-        weights: mobilenet-v1-1.0-224.caffemodel
+      - framework: tvm
+        model: /Users/admin/workspace/open_model_zoo/models/tvm_compiled/mobilenet-v1-1.0-224/mobilenet-v1-1.0-224.so  
         adapter: classification
+        device: cpu
+        session: local
+        vm: false
+        inputs:
+          - name: data
+            type: INPUT
+            shape: 1,3,224,224
+            layout: NCHW
+        _input_precision:
+            - data:FP32
+        
     datasets:
       - name: imagenet_1000_classes
         preprocessing:
@@ -13,18 +23,19 @@ models:
           - type: crop
             size: 224
           - type: normalization
-            mean: 103.94, 116.78, 123.68
+            mean: 103.94,116.78,123.68
             std: 58.8235294
 
-  - name: mobilenet-v1-1.0-224
-    launchers:
-      - framework: dlsdk
-        adapter: classification
+        annotation: /Users/admin/workspace/scripts/annotations/Imagenet/Imagenet_1000/imagenet.pickle
+        data_source: /Users/admin/workspace/scripts/datasets/Imagenet/Imagenet_1000
 
-    datasets:
-      - name: imagenet_1000_classes
-        preprocessing:
-          - type: resize
-            size: 256
-          - type: crop
-            size: 224
+        metrics:
+            -   type: accuracy
+                top_k: 1
+                reference: 69.496
+                threshold: 0.5
+            -   type: accuracy
+                top_k: 5
+                reference: 89.224
+                threshold: 0.5
+

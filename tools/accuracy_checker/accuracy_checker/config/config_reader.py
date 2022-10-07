@@ -343,6 +343,15 @@ class ConfigReader:
                 if input_precisions:
                     for launcher in launchers:
                         launcher['_input_precision'] = input_precisions
+                if devices:
+                    for launcher in launchers:
+                        launcher['device'] = devices
+                if sessions:
+                    for launcher in launchers:
+                        launcher['session'] = sessions
+                if vm:
+                    for launcher in launchers:
+                        launcher['vm'] = vm
                 if 'models' not in arguments or not arguments.models:
                     return launchers
                 model_paths = arguments.models
@@ -361,6 +370,9 @@ class ConfigReader:
                 return updated_launchers
 
             input_precisions = arguments.input_precision if 'input_precision' in arguments else None
+            devices = arguments.device if 'device' in arguments else None
+            sessions = arguments.session if 'session' in arguments else None
+            vm = arguments.vm if 'vm' in arguments else None
 
             for model in config['models']:
                 for launcher_entry in model['launchers']:

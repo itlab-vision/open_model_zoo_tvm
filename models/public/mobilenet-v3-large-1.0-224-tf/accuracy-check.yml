@@ -1,11 +1,20 @@
 models:
   - name: mobilenet-v3-large-1.0-224-tf
-
     launchers:
-      - framework: tf
-        model: v3-large_224_1.0_float/v3-large_224_1.0_float.pb
+      - framework: tvm
+        model: /Users/admin/workspace/open_model_zoo/models/tvm_compiled/mobilenet-v3-large-1.0-224-tf/mobilenet-v3-large-1.0-224-tf-default.so
         adapter: classification
-
+        device: cpu
+        session: local
+        vm: false
+        inputs:
+          - name: input
+            type: INPUT
+            shape: 1,224,224,3
+            layout: NHWC
+        _input_precision:
+            - input:FP32
+        
     datasets:
       - name: imagenet_1001_classes
         preprocessing:
@@ -18,15 +27,18 @@ models:
             mean: 127.5
             std: 127.5
 
-  - name: mobilenet-v3-large-1.0-224-tf
-    launchers:
-      - framework: dlsdk
-        adapter: classification
+        metrics:
+            -   type: accuracy
+                top_k: 1
+                reference: 75.70
+                threshold: 0.5
+            -   type: accuracy
+                top_k: 5
+                reference: 92.76
+                threshold: 0.5
+            
+        annotation: /Users/admin/workspace/scripts/annotations/Imagenet/Imagenet_1001/imagenet.pickle
+        data_source: /Users/admin/workspace/scripts/datasets/Imagenet/Imagenet_1000
+        dataset_meta: /Users/admin/workspace/scripts/annotations/Imagenet/Imagenet_1001/imagenet.json
 
-    datasets:
-      - name: imagenet_1001_classes
-        preprocessing:
-          - type: resize
-            size: 256
-          - type: crop
-            size: 224
+
