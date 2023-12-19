@@ -4,6 +4,8 @@ from collections import OrderedDict
 from ..config import NumberField, StringField, BoolField
 from .launcher import Launcher
 
+import numpy as np
+
 
 class TVMLauncher(Launcher):
     __provider__ = "tvm"
@@ -20,24 +22,11 @@ class TVMLauncher(Launcher):
                     description="Batch size.",
                     default=1,
                 ),
-                "dev_id": NumberField(
-                    value_type=int,
-                    min_value=0,
-                    optional=True,
-                    description="Device ID.",
-                    default=0,
-                ),
                 "device": StringField(
-                    choices=["cpu", "gpu", "hex"],
+                    choices=["cpu"],
                     optional=True,
-                    description="Choose between cpu/gpu/hexagon run.",
+                    description="Choose cpu run.",
                     default="cpu",
-                ),
-                "session": StringField(
-                    choices=["local", "remote"],
-                    optional=True,
-                    description="Choose between local/remote run.",
-                    default="local",
                 ),
                 "vm": BoolField(description="Run with Virtual Machine.", default=False),
             }
@@ -48,13 +37,7 @@ class TVMLauncher(Launcher):
         super().__init__(config_entry, *args, **kwargs)
         try:
             import tvm  # pylint: disable=C0415
-            import tvm.rpc  # pylint: disable=C0415
-            import tvm.contrib.graph_executor  # pylint: disable=C0415
-            import tvm.runtime.vm
-
             self._tvm = tvm
-            self._tvm_rpc = tvm.rpc
-            self._tvm_runtime = tvm.contrib.graph_executor
         except ImportError as import_error:
             raise ValueError(
                 "TVM isn't installed. Please, install it before using. \n{}".format(
@@ -64,11 +47,8 @@ class TVMLauncher(Launcher):
         self.validate_config(config_entry)
 
         self._device = self.get_value_from_config("device")
-        self._session = self.get_value_from_config("session")
         self._vm_executor = self.get_value_from_config("vm")
         self._batch = self.get_value_from_config("batch")
-
-        self._connect_tracker()
 
         self._get_device()
 
@@ -78,43 +58,9 @@ class TVMLauncher(Launcher):
 
         self._generate_outputs()
 
-    def _connect_tracker(self):
-        if self._session == "remote":
-            print("Using RemoteSession.")
-            tracker_host = os.environ["TVM_TRACKER_HOST"]
-            tracker_port = int(os.environ["TVM_TRACKER_PORT"])
-            key = "android"
-            self._tracker = self._tvm_rpc.connect_tracker(tracker_host, tracker_port)
-            if self._device == "hex":
-                self._remote = self._tracker.request(
-                    key,
-                    priority=0,
-                    session_timeout=200,
-                    session_constructor_args=[
-                        "tvm.contrib.hexagon.create_hexagon_session",
-                        "hexagon-rpc",
-                        256 * 1024,
-                        os.environ.get("HEXAGON_SIM_ARGS", ""),
-                        256 * 1024 * 1024,
-                    ],
-                )
-                func = self._remote.get_function("device_api.hexagon.acquire_resources")
-                func()
-            else:
-                self._remote = self._tracker.request(
-                    key, priority=0, session_timeout=200
-                )
-        else:
-            print("Using LocalSession.")
-            self._remote = self._tvm_rpc.LocalSession()
-
     def _get_device(self):
         if self._device == "cpu":
-            self._device = self._remote.cpu(self.get_value_from_config("dev_id"))
-        if self._device == "gpu":
-            self._device = self._remote.cl(self.get_value_from_config("dev_id"))
-        if self._device == "hex":
-            self._device = self._remote.hexagon(self.get_value_from_config("dev_id"))
+            self._device = self._tvm.cpu(0)
 
     def _generate_inputs(self):
         config_inputs = self.config.get("inputs")
@@ -127,27 +73,33 @@ class TVMLauncher(Launcher):
 
     def _load_module(self, model_path):
         model_name = os.path.split(model_path)[-1]
-        print(
-            "Uploading lib on path {} to {} device.".format(model_path, self._session)
-        )
-        self._remote.upload(model_path)
-        print("Lib has been uploaded to target device {}.".format(self._device))
 
-        if self.get_value_from_config("device") == "hex":
-            hex_load_module = self._remote.get_function("tvm.hexagon.load_module")
-            lib = hex_load_module(model_name)
-            with open(self.config.get("json"), "r") as file:
-                graph_json = file.read()
-            return self._tvm_runtime.create(graph_json, lib, self._device)
-        else:
-            lib = self._remote.load_module(model_name)
+
 
         if self.get_value_from_config("vm"):
-            print("Runtime module: VirtualMachine.")
-            return self._tvm.runtime.vm.VirtualMachine(lib, self._device)
+            print("VirtualMachine Runtime not supported yet. Graph Executor used")
+            
+
+        if str(model_path).endswith('json') == True:
+            
+            params_path = str(model_path).replace('.json', '.params')
+
+            with open(model_path, "r") as file:
+                graph_json = file.read()
+            with open(params_path, 'rb') as fo:
+                params = self._tvm.relay.load_param_dict(fo.read())
+
+            mod = self._tvm.ir.load_json(graph_json)
+
+
+            with self._tvm.transform.PassContext(opt_level=0):
+                lib = self._tvm.relay.build(mod, target='llvm', params=params)
+
+            return self._tvm.contrib.graph_executor.GraphModule(lib['default'](self._device))
+
         else:
-            print("Runtime module: GraphExecutor.")
-            return self._tvm_runtime.GraphModule(lib["default"](self._device))
+            print("Only JSON/params model supported")
+            raise ValueError("Only JSON/params model supported")
 
     def _generate_outputs(self):
         if self._vm_executor:
@@ -165,6 +117,8 @@ class TVMLauncher(Launcher):
 
     @property
     def output_blob(self):
+
+        res = 0
         return next(iter(self._outputs_names))
 
     def fit_to_input(self, data, layer_name, layout, precision):
@@ -190,7 +144,11 @@ class TVMLauncher(Launcher):
             else:
                 for input_name, input_data in batch_input.items():
                     self._module.set_input(input_name, input_data)
+
+
                 self._module.run()
+
+
                 if self.config.get("adapter") == "bert_question_answering":
                     results.append(
                         {
@@ -205,6 +163,9 @@ class TVMLauncher(Launcher):
                             for output_name in self._outputs_names
                         }
                     )
+        
+        #print(np.argmax(results[0][0], axis = 1))
+                    
         return results
 
     def predict_async(self, *args, **kwargs):
@@ -213,7 +174,5 @@ class TVMLauncher(Launcher):
     def release(self):
         del self._module
         del self._device
-        del self._remote
-        del self._session
         del self._vm_executor
         del self._batch
