@@ -1,1 +1,5 @@
 *.pyc
+
+/tools/downloader/dataset
+/tools/downloader/intel
+/tools/downloader/public

@@ -34,3 +34,30 @@ models:
             aspect_ratio_scale: greater
           - type: crop
             size: 224
+
+  - name: resnet-50-tvm
+    launchers:
+      - framework: tvm
+        model: public/resnet-50-tf/resnet_v1-50.dylib
+        adapter: classification
+        inputs:
+          - name: map/TensorArrayStack/TensorArrayGatherV3
+            type: INPUT
+            shape: 1,224,224,3
+            layout: NHWC
+        _input_precision:
+          - map/TensorArrayStack/TensorArrayGatherV3:FP32
+        batch: 1
+        dev_id: 0
+
+    datasets:
+      - name: imagenet_1001_classes
+        preprocessing:
+          - type: bgr_to_rgb
+          - type: normalization
+            mean: [123.68, 116.78, 103.94]
+          - type: resize
+            size: 256
+            aspect_ratio_scale: greater
+          - type: crop
+            size: 224

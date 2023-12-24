@@ -1,11 +1,11 @@
 models:
-  - name: mobilenet-v2-1.0-224
+  - name: mace_mobilenetv1_nhwc
     launchers:
       - framework: tvm
-        model: /Users/admin/workspace/open_model_zoo/models/tvm_compiled/mobilenet-v2-1.0-224/mobilenet-v2-1.0-224-default.so
+        model: /Users/admin/workspace/open_model_zoo/models/tvm_compiled/compiled/mace_mobilenetv1_nhwc/mace_mobilenetv1_nhwc-android.so
         adapter: classification
         device: cpu
-        session: local
+        session: remote
         vm: false
         inputs:
           - name: input
@@ -17,11 +17,12 @@ models:
         
     datasets:
       - name: imagenet_1001_classes
+        #reader: pillow_imread
         preprocessing:
           - type: bgr_to_rgb
-          - type: crop
-            central_fraction: 0.875
           - type: resize
+            size: 250
+          - type: crop
             size: 224
           - type: normalization
             mean: 127.5
@@ -30,14 +31,14 @@ models:
         metrics:
             -   type: accuracy
                 top_k: 1
-                reference: 71.85
+                reference: 70.9
                 threshold: 0.5
             -   type: accuracy
                 top_k: 5
-                reference: 90.69
+                reference: 89.9
                 threshold: 0.5
             
-        annotation: /Users/admin/workspace/scripts/annotations/Imagenet/Imagenet_1001/imagenet.pickle
-        data_source: /Users/admin/workspace/scripts/datasets/Imagenet/Imagenet_1000
-        dataset_meta: /Users/admin/workspace/scripts/annotations/Imagenet/Imagenet_1001/imagenet.json
+        annotation: /Users/admin/workspace/scripts/annotations/Imagenet/Imagenet_100/imagenet.pickle
+        data_source: /Users/admin/workspace/scripts/datasets/Imagenet/Imagenet_100
+        dataset_meta: /Users/admin/workspace/scripts/annotations/Imagenet/Imagenet_100/imagenet.json
 

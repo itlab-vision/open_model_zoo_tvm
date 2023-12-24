@@ -54,6 +54,13 @@ except ImportError as import_error:
     )
 
 try:
+    from .tvm_launcher import TVMLauncher
+except ImportError as import_error:
+    TVMLauncher = unsupported_launcher(
+        'tvm', "TVM isn't installed. Please, install it before using. \n{}".format(import_error.msg)
+    )
+
+try:
     from .tf2_launcher import TF2Launcher
 except ImportError as import_error:
     TF2Launcher = unsupported_launcher(
@@ -78,6 +85,7 @@ __all__ = [
     'MxNetLauncher',
     'TFLauncher',
     'TFLiteLauncher',
+    'TVMLauncher',
     'DLSDKLauncher',
     'OpenCVLauncher',
     'ONNXLauncher',

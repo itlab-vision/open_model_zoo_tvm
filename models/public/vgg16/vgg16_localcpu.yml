@@ -1,0 +1,42 @@
+models:
+  - name: vgg16
+    launchers:
+      - framework: tvm
+        model: /Users/admin/workspace/open_model_zoo/models/tvm_compiled/compiled/vgg16/mxnet_vgg16-default.so
+        device: cpu
+        session: local
+        vm: false
+        adapter: classification
+        inputs:
+          - name: data
+            type: INPUT
+            shape: 1,3,224,224
+            layout: NCHW
+        _input_precision:
+            - data:FP32
+
+    datasets:
+      - name: imagenet_1001_classes
+        reader: pillow_imread
+        preprocessing:
+          #- type: bgr_to_rgb
+          - type: resize
+            size: 224
+          #  aspect_ratio_scale: greater
+          #- type: crop
+          #  size: 224
+          - type: normalization
+            mean: (123.0, 117.0, 104.0)
+            std: (58.395, 57.12, 57.375)
+
+        annotation: /Users/admin/workspace/scripts/annotations/Imagenet/Imagenet_100_no_background/imagenet.pickle
+        data_source: /Users/admin/workspace/scripts/datasets/Imagenet/Imagenet_100
+        metrics:
+            -   type: accuracy
+                top_k: 1
+                reference: 71.5
+                threshold: 0.1
+            -   type: accuracy
+                top_k: 5
+                reference: 89.8
+                threshold: 0.1

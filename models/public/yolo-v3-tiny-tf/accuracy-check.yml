@@ -1,8 +1,11 @@
 models:
   - name: yolo-v3-tiny-tf
     launchers:
-      - framework: tf
-        model:   yolo-v3-tiny.pb
+      - framework: tvm
+        model: /Users/admin/workspace/open_model_zoo/models/tvm_compiled/yolo-v3-tiny-tf/exec_yolo-v3-tiny-tf.so
+        device: cpu
+        session: local
+        vm: true
         adapter:
           type: yolo_v3
           anchors: tiny_yolo_v3
@@ -20,6 +23,8 @@ models:
         inputs:
           - name: 'image_input'
             type: INPUT
+            shape: 1,416,416,3
+            layout: NHWC
         outputs:
           - conv2d_9/BiasAdd
           - conv2d_12/BiasAdd
@@ -50,47 +55,13 @@ models:
             integral: 11point
             ignore_difficult: true
             presenter: print_scalar
+            reference: 35.9
+            threshold: 0.5
           - type: coco_precision
             max_detections: 100
             threshold: 0.5
+            reference: 39.7
 
-  - name: yolo-v3-tiny-tf
-
-    launchers:
-      - framework: dlsdk
-        adapter:
-          type: yolo_v3
-          anchors: tiny_yolo_v3
-          num: 3
-          coords: 4
-          classes: 80
-          threshold: 0.001
-          anchor_masks: [[3, 4, 5], [1, 2, 3]]
-          outputs:
-            - conv2d_9/Conv2D/YoloRegion
-            - conv2d_12/Conv2D/YoloRegion
-
-    datasets:
-      - name: ms_coco_detection_80_class_without_background
-        preprocessing:
-          - type: resize
-            size: 416
-
-        postprocessing:
-          - type: resize_prediction_boxes
-          - type: filter
-            apply_to: prediction
-            min_confidence: 0.001
-            remove_filtered: true
-          - type: nms
-            overlap: 0.5
-          - type: clip_boxes
-            apply_to: prediction
-        metrics:
-          - type: map
-            integral: 11point
-            ignore_difficult: true
-            presenter: print_scalar
-          - type: coco_precision
-            max_detections: 100
-            threshold: 0.5
+        annotation: /Users/admin/workspace/scripts/annotations/COCO/COCO_10/mscoco_detection.pickle
+        data_source: /Users/admin/workspace/scripts/datasets/COCO/COCO/val2017
+        dataset_meta: /Users/admin/workspace/scripts/annotations/COCO/COCO_10/mscoco_detection.json
