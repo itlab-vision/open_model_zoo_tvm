@@ -29,6 +29,13 @@ class TVMLauncher(Launcher):
                     default="cpu",
                 ),
                 "vm": BoolField(description="Run with Virtual Machine.", default=False),
+                "opt_level": NumberField(
+                    value_type=int,
+                    min_value=0,
+                    optional=True,
+                    description="Model optimization level",
+                    default=2,
+                ),
             }
         )
         return parameters
@@ -49,6 +56,7 @@ class TVMLauncher(Launcher):
         self._device = self.get_value_from_config("device")
         self._vm_executor = self.get_value_from_config("vm")
         self._batch = self.get_value_from_config("batch")
+        self._opt_level = self.get_value_from_config("opt_level")
 
         self._get_device()
 
@@ -75,7 +83,6 @@ class TVMLauncher(Launcher):
         model_name = os.path.split(model_path)[-1]
 
 
-
         if self.get_value_from_config("vm"):
             print("VirtualMachine Runtime not supported yet. Graph Executor used")
             
@@ -88,11 +95,10 @@ class TVMLauncher(Launcher):
                 graph_json = file.read()
             with open(params_path, 'rb') as fo:
                 params = self._tvm.relay.load_param_dict(fo.read())
-
             mod = self._tvm.ir.load_json(graph_json)
 
 
-            with self._tvm.transform.PassContext(opt_level=0):
+            with self._tvm.transform.PassContext(opt_level=self._opt_level):
                 lib = self._tvm.relay.build(mod, target='llvm', params=params)
 
             return self._tvm.contrib.graph_executor.GraphModule(lib['default'](self._device))
@@ -162,10 +168,7 @@ class TVMLauncher(Launcher):
                             output_name: self._module.get_output(output_name).asnumpy()
                             for output_name in self._outputs_names
                         }
-                    )
-        
-        #print(np.argmax(results[0][0], axis = 1))
-                    
+                    )       
         return results
 
     def predict_async(self, *args, **kwargs):
