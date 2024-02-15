@@ -82,11 +82,9 @@ class TVMLauncher(Launcher):
     def _load_module(self, model_path):
         model_name = os.path.split(model_path)[-1]
 
-
         if self.get_value_from_config("vm"):
             print("VirtualMachine Runtime not supported yet. Graph Executor used")
             
-
         if str(model_path).endswith('json') == True:
             
             params_path = str(model_path).replace('.json', '.params')
@@ -95,9 +93,9 @@ class TVMLauncher(Launcher):
                 graph_json = file.read()
             with open(params_path, 'rb') as fo:
                 params = self._tvm.relay.load_param_dict(fo.read())
+
             mod = self._tvm.ir.load_json(graph_json)
-
-
+            
             with self._tvm.transform.PassContext(opt_level=self._opt_level):
                 lib = self._tvm.relay.build(mod, target='llvm', params=params)
 
