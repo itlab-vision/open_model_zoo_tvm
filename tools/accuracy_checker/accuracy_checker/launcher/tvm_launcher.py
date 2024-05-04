@@ -5,6 +5,7 @@ from ..config import NumberField, StringField, BoolField
 from .launcher import Launcher
 
 import numpy as np
+import importlib
 
 
 class TVMLauncher(Launcher):
@@ -85,7 +86,12 @@ class TVMLauncher(Launcher):
         if self.get_value_from_config("vm"):
             print("VirtualMachine Runtime not supported yet. Graph Executor used")
             
-        if str(model_path).endswith('json') == True:
+        if str(model_path).endswith('tar') == True:
+            lib = self._tvm.runtime.load_module(model_path)
+            graph_executor = importlib.import_module('tvm.contrib.graph_executor')
+            return graph_executor.GraphModule(lib["default"](self._device))
+        
+        elif str(model_path).endswith('json') == True:
             
             params_path = str(model_path).replace('.json', '.params')
 
@@ -101,6 +107,7 @@ class TVMLauncher(Launcher):
 
             return self._tvm.contrib.graph_executor.GraphModule(lib['default'](self._device))
 
+        
         else:
             print("Only JSON/params model supported")
             raise ValueError("Only JSON/params model supported")
