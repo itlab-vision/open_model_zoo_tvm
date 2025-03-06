@@ -1,0 +1,23 @@
+models:
+  - name: sp_cora_gcn
+    launchers:
+      - framework: spektral
+        model: sp_cora_gcn.keras
+        adapter: node_classification
+        inputs:
+          - name: 'input'
+            type: INPUT
+            shape: 2708, 1433
+
+    datasets:
+      - name: Cora
+        reader: spektral_graph_reader
+        data_source: Cora.bin
+        annotation_conversion:
+            converter: spektral_converter
+            graph_path: Cora.bin
+
+        metrics:
+          - name: node_accuracy_name
+            type: node_accuracy
+            reference: 0.7970001697540283
