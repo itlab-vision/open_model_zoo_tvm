@@ -78,6 +78,14 @@ except ImportError as import_error:
 
 from .pytorch_launcher import PyTorchLauncher
 
+try:
+    from .executorch_launcher import ExecuTorchLauncher
+except ImportError as import_error:
+    ExecuTorchLauncher = unsupported_launcher(
+        'executorch', "Executorch isn't installed. Please, install it before using. \n{}".format(import_error.msg)
+    )
+
+
 __all__ = [
     'create_launcher',
     'Launcher',
@@ -90,6 +98,7 @@ __all__ = [
     'OpenCVLauncher',
     'ONNXLauncher',
     'PyTorchLauncher',
+    'ExecuTorchLauncher',
     'DummyLauncher',
     'InputFeeder'
 ]
