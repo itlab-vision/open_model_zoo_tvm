@@ -64,7 +64,7 @@ class PyTorchLauncher(Launcher):
         except ImportError as import_error:
             raise ValueError("PyTorch isn't installed. Please, install it before using. \n{}".format(import_error.msg))
         self._torch = torch
-        self.validate_config(config_entry)
+        #self.validate_config(config_entry)
         module_args = config_entry.get("module_args", ())
         module_kwargs = config_entry.get("module_kwargs", {})
         self.cuda = 'cuda' in self.get_value_from_config('device')
@@ -105,23 +105,25 @@ class PyTorchLauncher(Launcher):
         return next(iter(self.output_names))
 
     def load_module(self, model_cls, module_args, module_kwargs, checkpoint=None, state_key=None, python_path=None):
-        module_parts = model_cls.split(".")
-        model_cls = module_parts[-1]
-        model_path = ".".join(module_parts[:-1])
-        with append_to_path(python_path):
-            model_cls = importlib.import_module(model_path).__getattribute__(model_cls)
-            module = model_cls(*module_args, **module_kwargs)
-            if checkpoint:
-                checkpoint = self._torch.load(checkpoint,
-                                              map_location=None if self.cuda else self._torch.device('cpu'))
-                state = checkpoint if not state_key else checkpoint[state_key]
-                module.load_state_dict(state, strict=False)
-            if self.cuda:
-                module.cuda()
-            else:
-                module.cpu()
-            module.eval()
-            return module
+        module = self._torch.load(model_cls, weights_only=False).eval()
+        return module
+        #module_parts = model_cls.split(".")
+        #model_cls = module_parts[-1]
+        #model_path = ".".join(module_parts[:-1])
+        #with append_to_path(python_path):
+        #    model_cls = importlib.import_module(model_path).__getattribute__(model_cls)
+        #    module = model_cls(*module_args, **module_kwargs)
+        #    if checkpoint:
+        #        checkpoint = self._torch.load(checkpoint,
+        #                                      map_location=None if self.cuda else self._torch.device('cpu'))
+        #        state = checkpoint if not state_key else checkpoint[state_key]
+        #        module.load_state_dict(state, strict=False)
+        #    if self.cuda:
+        #        module.cuda()
+        #    else:
+        #        module.cpu()
+        #    module.eval()
+        #    return module
 
     def fit_to_input(self, data, layer_name, layout, precision):
         data = np.transpose(data, layout)

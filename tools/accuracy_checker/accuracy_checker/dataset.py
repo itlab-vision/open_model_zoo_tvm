@@ -554,7 +554,7 @@ class DataProvider:
         batch_annotation = []
         batch_start = item * self.batch
         batch_end = min(self.size, batch_start + self.batch)
-        batch_input_ids = self.subset[batch_start:batch_end] if self.subset else range(batch_start, batch_end)
+        batch_input_ids = self.subset[batch_start:batch_end] if self.subset else range(int(batch_start), int(batch_end))
         batch_identifiers = [self._data_list[idx] for idx in batch_input_ids]
         batch_input = [self.data_reader(identifier=identifier) for identifier in batch_identifiers]
         if self.annotation_provider:
